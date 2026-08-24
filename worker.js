@@ -1,12 +1,12 @@
 // ---------- Insert Your Data ---------- //
 
-const BOT_TOKEN = "8998444861:AAECB2x74--B-ONku-FUFt19K_fSYDs2R4U"; // Insert your bot token.
-const BOT_WEBHOOK = "/endpoint"; // Let it be as it is.
-const BOT_SECRET = "123456"; // Insert a powerful secret text (only [A-Z, a-z, 0-9, _, -] are allowed).
-const BOT_OWNER = 8731089917; // Insert your telegram account id.
-const BOT_CHANNEL = -1004424431993; // Insert your telegram channel id which the bot is admin in.
-const SIA_SECRET = "SIA_SECRET"; // Insert a powerful secret text and keep it safe.
-const PUBLIC_BOT = false; // Make your bot public (only [true, false] are allowed).
+const BOT_TOKEN = "8998444861:AAECB2x74--B-ONku-FUFt19K_fSYDs2R4U"; 
+const BOT_WEBHOOK = "/endpoint"; 
+const BOT_SECRET = "BOT_SECRET"; 
+const BOT_OWNER = 8731089917; 
+const BOT_CHANNEL = -1004424431993; 
+const SIA_SECRET = "SIA_SECRET"; 
+const PUBLIC_BOT = false; 
 
 // ---------- Do Not Modify ---------- // 
 
@@ -19,25 +19,27 @@ const ERROR_406 = {"ok":false,"error_code":406,"description":"Bad Request: file 
 const ERROR_407 = {"ok":false,"error_code":407,"description":"Bad Request: file hash invalid by atob"};
 const ERROR_408 = {"ok":false,"error_code":408,"description":"Bad Request: mode not in [attachment, inline, watch]"};
 
-// ---------- Event Listener ---------- // 
+// ---------- Event Listener (ES Module Format for Wrangler V4) ---------- // 
 
-addEventListener('fetch', event => {
-    event.respondWith(handleRequest(event))
-});
+export default {
+    async fetch(request, env, ctx) {
+        return await handleRequest(request, ctx);
+    }
+};
 
-async function handleRequest(event) {
-    const url = new URL(event.request.url);
+async function handleRequest(request, ctx) {
+    const url = new URL(request.url);
     const file = url.searchParams.get('file');
     const mode = url.searchParams.get('mode') || "attachment";
      
-    if (url.pathname === BOT_WEBHOOK) {return Bot.handleWebhook(event)}
-    if (url.pathname === '/registerWebhook') {return Bot.registerWebhook(event, url, BOT_WEBHOOK, BOT_SECRET)}
-    if (url.pathname === '/unregisterWebhook') {return Bot.unregisterWebhook(event)}
+    if (url.pathname === BOT_WEBHOOK) {return Bot.handleWebhook(request, ctx)}
+    if (url.pathname === '/registerWebhook') {return Bot.registerWebhook(request, url, BOT_WEBHOOK, BOT_SECRET)}
+    if (url.pathname === '/unregisterWebhook') {return Bot.unregisterWebhook()}
     if (url.pathname === '/getMe') {return new Response(JSON.stringify(await Bot.getMe()), {headers: HEADERS_ERRR, status: 202})}
 
     if (!file) {return Raise(ERROR_404, 404);}
     if (!["attachment", "inline", "watch"].includes(mode)) {return Raise(ERROR_408, 404)}
-    if (!WHITE_METHODS.includes(event.request.method)) {return Raise(ERROR_405, 405);}
+    if (!WHITE_METHODS.includes(request.method)) {return Raise(ERROR_405, 405);}
     try {await Cryptic.deHash(file)} catch {return Raise(ERROR_407, 404)}
 
     // 🚀 THE PREMIUM PLYR.IO INJECTION 🚀
@@ -50,34 +52,16 @@ async function handleRequest(event) {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Premium Stream</title>
-            <!-- Plyr CSS -->
             <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
             <style>
                 :root {
-                    /* Tu is red hex code ko apne hisaab se badal lena */
                     --plyr-color-main: #e50914; 
                     --plyr-video-background: #000;
                     --plyr-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 }
-                body { 
-                    margin: 0; 
-                    padding: 0; 
-                    background-color: #000; 
-                    display: flex; 
-                    justify-content: center; 
-                    align-items: center; 
-                    height: 100vh; 
-                    overflow: hidden; 
-                }
-                .video-wrapper {
-                    width: 100vw;
-                    height: 100vh;
-                }
-                /* Hide custom controls if JavaScript fails */
-                video {
-                    width: 100%;
-                    height: 100%;
-                }
+                body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+                .video-wrapper { width: 100vw; height: 100vh; }
+                video { width: 100%; height: 100%; }
             </style>
         </head>
         <body>
@@ -87,28 +71,11 @@ async function handleRequest(event) {
                     Your browser does not support the premium player.
                 </video>
             </div>
-            
-            <!-- Plyr JS Core -->
             <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
                     const player = new Plyr('#premium-player', {
-                        controls: [
-                            'play-large', // The big play button in center
-                            'restart',    // Restart playback
-                            'rewind',     // Rewind by the seek time (default 10 seconds)
-                            'play',       // Play/pause playback
-                            'fast-forward', // Fast forward by the seek time (default 10 seconds)
-                            'progress',   // The progress bar and scrubber for playback and buffering
-                            'current-time', // The current time of playback
-                            'duration',   // The full duration of the media
-                            'mute',       // Toggle mute
-                            'volume',     // Volume control
-                            'settings',   // Settings menu
-                            'pip',        // Picture-in-picture (currently Safari only)
-                            'airplay',    // Airplay (currently Safari only)
-                            'fullscreen'  // Toggle fullscreen
-                        ],
+                        controls: ['play-large', 'restart', 'rewind', 'play', 'fast-forward', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'pip', 'airplay', 'fullscreen'],
                         settings: ['speed', 'loop'],
                         speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
                         keyboard: { focused: true, global: true },
@@ -128,7 +95,7 @@ async function handleRequest(event) {
 
     const channel_id = BOT_CHANNEL;
     const file_id = await Cryptic.deHash(file);
-    const retrieve = await RetrieveFile(channel_id, file_id, event.request);
+    const retrieve = await RetrieveFile(channel_id, file_id, request);
     if (retrieve.error_code) {return await Raise(retrieve, retrieve.error_code)};
 
     const tgResponse = retrieve[0]; 
@@ -159,29 +126,13 @@ async function RetrieveFile(channel_id, message_id, request) {
     if (data.error_code){return data}
     
     if (data.document){
-        fLen = data.document.length - 1
-        fID = data.document.file_id;
-        fName = data.document.file_name;
-        fType = data.document.mime_type;
-        fSize = data.document.file_size;
+        fLen = data.document.length - 1; fID = data.document.file_id; fName = data.document.file_name; fType = data.document.mime_type; fSize = data.document.file_size;
     } else if (data.audio) {
-        fLen = data.audio.length - 1
-        fID = data.audio.file_id;
-        fName = data.audio.file_name;
-        fType = data.audio.mime_type;
-        fSize = data.audio.file_size;
+        fLen = data.audio.length - 1; fID = data.audio.file_id; fName = data.audio.file_name; fType = data.audio.mime_type; fSize = data.audio.file_size;
     } else if (data.video) {
-        fLen = data.video.length - 1
-        fID = data.video.file_id;
-        fName = data.video.file_name;
-        fType = data.video.mime_type;
-        fSize = data.video.file_size;
+        fLen = data.video.length - 1; fID = data.video.file_id; fName = data.video.file_name; fType = data.video.mime_type; fSize = data.video.file_size;
     } else if (data.photo) {
-        fLen = data.photo.length - 1
-        fID = data.photo[fLen].file_id;
-        fName = data.photo[fLen].file_unique_id + '.jpg';
-        fType = "image/jpg";
-        fSize = data.photo[fLen].file_size;
+        fLen = data.photo.length - 1; fID = data.photo[fLen].file_id; fName = data.photo[fLen].file_unique_id + '.jpg'; fType = "image/jpg"; fSize = data.photo[fLen].file_size;
     } else {
         return ERROR_406
     }
@@ -213,30 +164,22 @@ class Cryptic {
   static async getSalt(length = 16) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let salt = '';
-    for (let i = 0; i < length; i++) {
-        salt += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
+    for (let i = 0; i < length; i++) { salt += characters.charAt(Math.floor(Math.random() * characters.length)); }
     return salt;
   }
 
   static async getKey(salt, iterations = 1000, keyLength = 32) {
     const key = new Uint8Array(keyLength);
-    for (let i = 0; i < keyLength; i++) {
-        key[i] = (SIA_SECRET.charCodeAt(i % SIA_SECRET.length) + salt.charCodeAt(i % salt.length)) % 256;
-    }
+    for (let i = 0; i < keyLength; i++) { key[i] = (SIA_SECRET.charCodeAt(i % SIA_SECRET.length) + salt.charCodeAt(i % salt.length)) % 256; }
     for (let j = 0; j < iterations; j++) {
-        for (let i = 0; i < keyLength; i++) {
-            key[i] = (key[i] + SIA_SECRET.charCodeAt(i % SIA_SECRET.length) + salt.charCodeAt(i % salt.length)) % 256;
-        }
+        for (let i = 0; i < keyLength; i++) { key[i] = (key[i] + SIA_SECRET.charCodeAt(i % SIA_SECRET.length) + salt.charCodeAt(i % salt.length)) % 256; }
     }
     return key;
   }
 
   static async baseEncode(input) {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    let output = '';
-    let buffer = 0;
-    let bitsLeft = 0;
+    let output = ''; let buffer = 0; let bitsLeft = 0;
     for (let i = 0; i < input.length; i++) {
         buffer = (buffer << 8) | input.charCodeAt(i);
         bitsLeft += 8;
@@ -250,9 +193,7 @@ class Cryptic {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     const lookup = {};
     for (let i = 0; i < alphabet.length; i++) {lookup[alphabet[i]] = i}
-    let buffer = 0;
-    let bitsLeft = 0;
-    let output = '';
+    let buffer = 0; let bitsLeft = 0; let output = '';
     for (let i = 0; i < input.length; i++) {
         buffer = (buffer << 5) | lookup[input[i]];
         bitsLeft += 5;
@@ -285,22 +226,22 @@ class Cryptic {
 // ---------- Telegram Bot ---------- //
 
 class Bot {
-  static async handleWebhook(event) {
-    if (event.request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== BOT_SECRET) {
+  static async handleWebhook(request, ctx) {
+    if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== BOT_SECRET) {
       return new Response('Unauthorized', { status: 403 })
     }
-    const update = await event.request.json()
-    event.waitUntil(this.Update(event, update))
+    const update = await request.json()
+    ctx.waitUntil(this.Update(request, update))
     return new Response('Ok')
   }
 
-  static async registerWebhook(event, requestUrl, suffix, secret) {
+  static async registerWebhook(request, requestUrl, suffix, secret) {
     const webhookUrl = `${requestUrl.protocol}//${requestUrl.hostname}${suffix}`
     const response = await fetch(await this.apiUrl('setWebhook', { url: webhookUrl, secret_token: secret }))
     return new Response(JSON.stringify(await response.json()), {headers: HEADERS_ERRR})
   }
 
-  static async unregisterWebhook(event) { 
+  static async unregisterWebhook() { 
     const response = await fetch(await this.apiUrl('setWebhook', { url: '' }))
     return new Response(JSON.stringify(await response.json()), {headers: HEADERS_ERRR})
   }
@@ -364,9 +305,7 @@ class Bot {
 
   static async fetchFile(file_path, request) {
       const headers = {};
-      if (request && request.headers.has('range')) {
-          headers['range'] = request.headers.get('range');
-      }
+      if (request && request.headers.has('range')) { headers['range'] = request.headers.get('range'); }
       const response = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${file_path}`, { headers });
       return response; 
   }
@@ -377,15 +316,15 @@ class Bot {
       return `https://api.telegram.org/bot${BOT_TOKEN}/${methodName}${query}`
   }
 
-  static async Update(event, update) {
-    if (update.inline_query) {await onInline(event, update.inline_query)}
-    if ('message' in update) {await onMessage(event, update.message)}
+  static async Update(request, update) {
+    if (update.inline_query) {await onInline(request, update.inline_query)}
+    if ('message' in update) {await onMessage(request, update.message)}
   }
 }
 
 // ---------- Inline Listener ---------- // 
 
-async function onInline(event, inline) {
+async function onInline(request, inline) {
   let  fID; let fName; let fType; let fSize; let fLen;
 
   if (!PUBLIC_BOT && inline.from.id != BOT_OWNER) {
@@ -408,29 +347,13 @@ async function onInline(event, inline) {
   }
 
   if (data.document){
-    fLen = data.document.length - 1
-    fID = data.document.file_id;
-    fName = data.document.file_name;
-    fType = data.document.mime_type;
-    fSize = data.document.file_size;
+    fLen = data.document.length - 1; fID = data.document.file_id; fName = data.document.file_name; fType = data.document.mime_type; fSize = data.document.file_size;
   } else if (data.audio) {
-    fLen = data.audio.length - 1
-    fID = data.audio.file_id;
-    fName = data.audio.file_name;
-    fType = data.audio.mime_type;
-    fSize = data.audio.file_size;
+    fLen = data.audio.length - 1; fID = data.audio.file_id; fName = data.audio.file_name; fType = data.audio.mime_type; fSize = data.audio.file_size;
   } else if (data.video) {
-    fLen = data.video.length - 1
-    fID = data.video.file_id;
-    fName = data.video.file_name;
-    fType = data.video.mime_type;
-    fSize = data.video.file_size;
+    fLen = data.video.length - 1; fID = data.video.file_id; fName = data.video.file_name; fType = data.video.mime_type; fSize = data.video.file_size;
   } else if (data.photo) {
-    fLen = data.photo.length - 1
-    fID = data.photo[fLen].file_id;
-    fName = data.photo[fLen].file_unique_id + '.jpg';
-    fType = "image/jpg";
-    fSize = data.photo[fLen].file_size;
+    fLen = data.photo.length - 1; fID = data.photo[fLen].file_id; fName = data.photo[fLen].file_unique_id + '.jpg'; fType = "image/jpg"; fSize = data.photo[fLen].file_size;
   } else {
     return ERROR_406
   }
@@ -442,23 +365,17 @@ async function onInline(event, inline) {
     const buttons = [[{ text: "Send Again", switch_inline_query_current_chat: inline.query }]];
     return await Bot.answerInlineDocument(inline.id, fName || "undefined", fID, fType, buttons)
   }
-
 }
 
 // ---------- Message Listener ---------- // 
 
-async function onMessage(event, message) {
+async function onMessage(request, message) {
   let fID; let fName; let fSave; let fType;
-  let url = new URL(event.request.url);
+  let url = new URL(request.url);
   let bot = await Bot.getMe();
 
-  if (message.via_bot && message.via_bot.username == bot.username) {
-    return
-  }
-
-  if (message.chat.id.toString().includes("-100")) {
-    return
-  }
+  if (message.via_bot && message.via_bot.username == bot.username) { return }
+  if (message.chat.id.toString().includes("-100")) { return }
 
   if (message.text && message.text.startsWith("/start ")) {
     const file = message.text.split("/start ")[1]
@@ -469,17 +386,13 @@ async function onMessage(event, message) {
     const data = await Bot.editMessage(channel_id, message_id, await UUID());
 
     if (data.document) {
-      fID = data.document.file_id;
-      return await Bot.sendDocument(message.chat.id, fID)
+      return await Bot.sendDocument(message.chat.id, data.document.file_id)
     } else if (data.audio) {
-      fID = data.audio.file_id;
-      return await Bot.sendDocument(message.chat.id, fID)
+      return await Bot.sendDocument(message.chat.id, data.audio.file_id)
     } else if (data.video) {
-      fID = data.video.file_id;
-      return await Bot.sendDocument(message.chat.id, fID)
+      return await Bot.sendDocument(message.chat.id, data.video.file_id)
     } else if (data.photo) {
-      fID = data.photo[data.photo.length - 1].file_id;
-      return await Bot.sendPhoto(message.chat.id, fID)
+      return await Bot.sendPhoto(message.chat.id, data.photo[data.photo.length - 1].file_id)
     } else {
       return Bot.sendMessage(message.chat.id, message.message_id, "Bad Request: File not found")
     }
@@ -491,24 +404,16 @@ async function onMessage(event, message) {
   }
 
   if (message.document){
-    fID = message.document.file_id;
-    fName = message.document.file_name;
-    fType = message.document.mime_type.split("/")[0]
+    fID = message.document.file_id; fName = message.document.file_name; fType = message.document.mime_type.split("/")[0];
     fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
   } else if (message.audio) {
-    fID = message.audio.file_id;
-    fName = message.audio.file_name;
-    fType = message.audio.mime_type.split("/")[0]
+    fID = message.audio.file_id; fName = message.audio.file_name; fType = message.audio.mime_type.split("/")[0];
     fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
   } else if (message.video) {
-    fID = message.video.file_id;
-    fName = message.video.file_name;
-    fType = message.video.mime_type.split("/")[0]
+    fID = message.video.file_id; fName = message.video.file_name; fType = message.video.mime_type.split("/")[0];
     fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
   } else if (message.photo) {
-    fID = message.photo[message.photo.length - 1].file_id;
-    fName = message.photo[message.photo.length - 1].file_unique_id + '.jpg';
-    fType = "image/jpg".split("/")[0];
+    fID = message.photo[message.photo.length - 1].file_id; fName = message.photo[message.photo.length - 1].file_unique_id + '.jpg'; fType = "image/jpg".split("/")[0];
     fSave = await Bot.sendPhoto(BOT_CHANNEL, fID)
   } else {
     return Bot.sendMessage(message.chat.id, message.message_id, "Send me any file/video/gif/audio *(t<=4GB, e<=20MB)*.")
