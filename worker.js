@@ -1,532 +1,533 @@
-// ===== CLOUDFLARE WORKER VERSION =====
-// Deploy this to Cloudflare Workers with Wrangler or Dashboard
+// ---------- Insert Your Data ---------- //
 
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-    
-    // ===== DISCORD INTERACTIONS HANDLER =====
-    if (request.method === 'POST' && path === '/interactions') {
-      const signature = request.headers.get('X-Signature-Ed25519');
-      const timestamp = request.headers.get('X-Signature-Timestamp');
-      
-      // Verify webhook signature (implement with your public key)
-      // For production: use @discord/verify or manual verification
-      const rawBody = await request.text();
-      const interaction = JSON.parse(rawBody);
-      
-      return handleInteraction(interaction, env);
+const BOT_TOKEN = "8998444861:AAECB2x74--B-ONku-FUFt19K_fSYDs2R4U"; // Insert your bot token.
+const BOT_WEBHOOK = "/endpoint"; // Let it be as it is.
+const BOT_SECRET = "123456"; // Insert a powerful secret text (only [A-Z, a-z, 0-9, _, -] are allowed).
+const BOT_OWNER = 8731089917; // Insert your telegram account id.
+const BOT_CHANNEL = -1004424431993; // Insert your telegram channel id which the bot is admin in.
+const SIA_SECRET = "SIA_SECRET"; // Insert a powerful secret text and keep it safe.
+const PUBLIC_BOT = false; // Make your bot public (only [true, false] are allowed).
+
+// ---------- Do Not Modify ---------- // 
+
+const WHITE_METHODS = ["GET", "POST", "HEAD"];
+const HEADERS_FILE = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Range"};
+const HEADERS_ERRR = {'Access-Control-Allow-Origin': '*', 'content-type': 'application/json'};
+const ERROR_404 = {"ok":false,"error_code":404,"description":"Bad Request: missing /?file= parameter"};
+const ERROR_405 = {"ok":false,"error_code":405,"description":"Bad Request: method not allowed"};
+const ERROR_406 = {"ok":false,"error_code":406,"description":"Bad Request: file type invalid"};
+const ERROR_407 = {"ok":false,"error_code":407,"description":"Bad Request: file hash invalid by atob"};
+const ERROR_408 = {"ok":false,"error_code":408,"description":"Bad Request: mode not in [attachment, inline, watch]"};
+
+// ---------- Event Listener ---------- // 
+
+addEventListener('fetch', event => {
+    event.respondWith(handleRequest(event))
+});
+
+async function handleRequest(event) {
+    const url = new URL(event.request.url);
+    const file = url.searchParams.get('file');
+    const mode = url.searchParams.get('mode') || "attachment";
+     
+    if (url.pathname === BOT_WEBHOOK) {return Bot.handleWebhook(event)}
+    if (url.pathname === '/registerWebhook') {return Bot.registerWebhook(event, url, BOT_WEBHOOK, BOT_SECRET)}
+    if (url.pathname === '/unregisterWebhook') {return Bot.unregisterWebhook(event)}
+    if (url.pathname === '/getMe') {return new Response(JSON.stringify(await Bot.getMe()), {headers: HEADERS_ERRR, status: 202})}
+
+    if (!file) {return Raise(ERROR_404, 404);}
+    if (!["attachment", "inline", "watch"].includes(mode)) {return Raise(ERROR_408, 404)}
+    if (!WHITE_METHODS.includes(event.request.method)) {return Raise(ERROR_405, 405);}
+    try {await Cryptic.deHash(file)} catch {return Raise(ERROR_407, 404)}
+
+    // 🚀 THE PREMIUM PLYR.IO INJECTION 🚀
+    if (mode === "watch") {
+        const streamUrl = `${url.origin}/?file=${file}&mode=inline`;
+        const html = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Premium Stream</title>
+            <!-- Plyr CSS -->
+            <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+            <style>
+                :root {
+                    /* Tu is red hex code ko apne hisaab se badal lena */
+                    --plyr-color-main: #e50914; 
+                    --plyr-video-background: #000;
+                    --plyr-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                }
+                body { 
+                    margin: 0; 
+                    padding: 0; 
+                    background-color: #000; 
+                    display: flex; 
+                    justify-content: center; 
+                    align-items: center; 
+                    height: 100vh; 
+                    overflow: hidden; 
+                }
+                .video-wrapper {
+                    width: 100vw;
+                    height: 100vh;
+                }
+                /* Hide custom controls if JavaScript fails */
+                video {
+                    width: 100%;
+                    height: 100%;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="video-wrapper">
+                <video id="premium-player" playsinline controls preload="metadata">
+                    <source src="${streamUrl}" type="video/mp4" />
+                    Your browser does not support the premium player.
+                </video>
+            </div>
+            
+            <!-- Plyr JS Core -->
+            <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const player = new Plyr('#premium-player', {
+                        controls: [
+                            'play-large', // The big play button in center
+                            'restart',    // Restart playback
+                            'rewind',     // Rewind by the seek time (default 10 seconds)
+                            'play',       // Play/pause playback
+                            'fast-forward', // Fast forward by the seek time (default 10 seconds)
+                            'progress',   // The progress bar and scrubber for playback and buffering
+                            'current-time', // The current time of playback
+                            'duration',   // The full duration of the media
+                            'mute',       // Toggle mute
+                            'volume',     // Volume control
+                            'settings',   // Settings menu
+                            'pip',        // Picture-in-picture (currently Safari only)
+                            'airplay',    // Airplay (currently Safari only)
+                            'fullscreen'  // Toggle fullscreen
+                        ],
+                        settings: ['speed', 'loop'],
+                        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+                        keyboard: { focused: true, global: true },
+                        tooltips: { controls: true, seek: true },
+                        clickToPlay: true
+                    });
+                });
+            </script>
+        </body>
+        </html>`;
+        
+        return new Response(html, {
+            status: 200,
+            headers: { "Content-Type": "text/html; charset=utf-8", "Access-Control-Allow-Origin": "*" }
+        });
     }
+
+    const channel_id = BOT_CHANNEL;
+    const file_id = await Cryptic.deHash(file);
+    const retrieve = await RetrieveFile(channel_id, file_id, event.request);
+    if (retrieve.error_code) {return await Raise(retrieve, retrieve.error_code)};
+
+    const tgResponse = retrieve[0]; 
+    const rname = retrieve[1];
+    const rsize = retrieve[2];
+    const rtype = retrieve[3];
+
+    const responseHeaders = new Headers(tgResponse.headers);
+    responseHeaders.set("Content-Disposition", `${mode}; filename="${rname}"`);
+    responseHeaders.set("Content-Type", rtype);
+    responseHeaders.set("Accept-Ranges", "bytes"); 
+
+    for (const [key, value] of Object.entries(HEADERS_FILE)) {
+        responseHeaders.set(key, value);
+    }
+
+    return new Response(tgResponse.body, {
+        status: tgResponse.status, 
+        headers: responseHeaders
+    });
+}
+
+// ---------- Retrieve File ---------- //
+
+async function RetrieveFile(channel_id, message_id, request) {
+    let  fID; let fName; let fType; let fSize; let fLen;
+    let data = await Bot.editMessage(channel_id, message_id, await UUID());
+    if (data.error_code){return data}
     
-    // ===== SLASH COMMAND REGISTRATION =====
-    if (request.method === 'POST' && path === '/register') {
-      const commands = [
-        {
-          name: 'start',
-          description: 'Show main menu',
-          type: 1
-        },
-        {
-          name: 'gen',
-          description: 'Generate CCs with optional custom fields',
-          type: 1,
-          options: [
-            {
-              name: 'input',
-              description: 'BIN or full pattern (e.g., 519535 or 519535|12|2027|rnd)',
-              type: 3,
-              required: true
-            }
-          ]
-        },
-        {
-          name: 'mgen',
-          description: 'Mass generate CCs and send as .txt file',
-          type: 1,
-          options: [
-            {
-              name: 'bin',
-              description: 'BIN (e.g., 519535)',
-              type: 3,
-              required: true
-            },
-            {
-              name: 'amount',
-              description: 'Amount with k/m (e.g., 500k, 1m)',
-              type: 3,
-              required: true
-            }
-          ]
-        },
-        {
-          name: 'bin',
-          description: 'Get full info about a BIN (first 6-8 digits)',
-          type: 1,
-          options: [
-            {
-              name: 'bin',
-              description: 'BIN number (e.g., 519535 or 404000)',
-              type: 3,
-              required: true
-            }
-          ]
+    if (data.document){
+        fLen = data.document.length - 1
+        fID = data.document.file_id;
+        fName = data.document.file_name;
+        fType = data.document.mime_type;
+        fSize = data.document.file_size;
+    } else if (data.audio) {
+        fLen = data.audio.length - 1
+        fID = data.audio.file_id;
+        fName = data.audio.file_name;
+        fType = data.audio.mime_type;
+        fSize = data.audio.file_size;
+    } else if (data.video) {
+        fLen = data.video.length - 1
+        fID = data.video.file_id;
+        fName = data.video.file_name;
+        fType = data.video.mime_type;
+        fSize = data.video.file_size;
+    } else if (data.photo) {
+        fLen = data.photo.length - 1
+        fID = data.photo[fLen].file_id;
+        fName = data.photo[fLen].file_unique_id + '.jpg';
+        fType = "image/jpg";
+        fSize = data.photo[fLen].file_size;
+    } else {
+        return ERROR_406
+    }
+
+    const file = await Bot.getFile(fID)
+    if (file.error_code){return file}
+
+    return [await Bot.fetchFile(file.file_path, request), fName, fSize, fType];
+}
+
+// ---------- Raise Error ---------- //
+
+async function Raise(json_error, status_code) {
+    return new Response(JSON.stringify(json_error), { headers: HEADERS_ERRR, status: status_code });
+}
+
+// ---------- UUID Generator ---------- //
+
+async function UUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+// ---------- Hash Generator ---------- //
+
+class Cryptic {
+  static async getSalt(length = 16) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let salt = '';
+    for (let i = 0; i < length; i++) {
+        salt += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return salt;
+  }
+
+  static async getKey(salt, iterations = 1000, keyLength = 32) {
+    const key = new Uint8Array(keyLength);
+    for (let i = 0; i < keyLength; i++) {
+        key[i] = (SIA_SECRET.charCodeAt(i % SIA_SECRET.length) + salt.charCodeAt(i % salt.length)) % 256;
+    }
+    for (let j = 0; j < iterations; j++) {
+        for (let i = 0; i < keyLength; i++) {
+            key[i] = (key[i] + SIA_SECRET.charCodeAt(i % SIA_SECRET.length) + salt.charCodeAt(i % salt.length)) % 256;
         }
-      ];
-      
-      // Register globally
-      const response = await fetch(
-        `https://discord.com/api/v10/applications/${env.DISCORD_CLIENT_ID}/commands`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(commands)
-        }
-      );
-      
-      return new Response(await response.text(), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' }
-      });
     }
-    
-    return new Response('CC Bot Worker Running', { status: 200 });
+    return key;
   }
-};
 
-// ===== INTERACTION HANDLER =====
-async function handleInteraction(interaction, env) {
-  const type = interaction.type;
-  const data = interaction.data;
-  const token = interaction.token;
-  const appId = interaction.application_id;
-  
-  // PING (type 1)
-  if (type === 1) {
-    return new Response(JSON.stringify({ type: 1 }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-  
-  // APPLICATION_COMMAND (type 2)
-  if (type === 2) {
-    const command = data.name;
-    const options = data.options || [];
-    
-    // Defer response immediately
-    await fetch(`https://discord.com/api/v10/webhooks/${appId}/${token}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 5 }) // Deferred response
-    });
-    
-    // Process commands
-    let result;
-    switch (command) {
-      case 'start':
-        result = await handleStart(interaction);
-        break;
-      case 'gen':
-        const input = options.find(o => o.name === 'input')?.value || '';
-        result = await handleGen(input, env);
-        break;
-      case 'mgen':
-        const bin = options.find(o => o.name === 'bin')?.value || '';
-        const amount = options.find(o => o.name === 'amount')?.value || '';
-        result = await handleMGen(bin, amount, env);
-        break;
-      case 'bin':
-        const binLookup = options.find(o => o.name === 'bin')?.value || '';
-        result = await handleBin(binLookup, env);
-        break;
-      default:
-        result = { content: '❌ Unknown command' };
+  static async baseEncode(input) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let output = '';
+    let buffer = 0;
+    let bitsLeft = 0;
+    for (let i = 0; i < input.length; i++) {
+        buffer = (buffer << 8) | input.charCodeAt(i);
+        bitsLeft += 8;
+        while (bitsLeft >= 5) {output += alphabet[(buffer >> (bitsLeft - 5)) & 31]; bitsLeft -= 5}
     }
-    
-    // Edit deferred response
-    await fetch(`https://discord.com/api/v10/webhooks/${appId}/${token}/messages/@original`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(result)
-    });
-    
-    return new Response(JSON.stringify({ type: 6 }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    if (bitsLeft > 0) {output += alphabet[(buffer << (5 - bitsLeft)) & 31]}
+    return output;
   }
-  
-  // MESSAGE COMPONENT (type 3)
-  if (type === 3) {
-    return handleComponent(interaction, env);
+
+  static async baseDecode(input) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const lookup = {};
+    for (let i = 0; i < alphabet.length; i++) {lookup[alphabet[i]] = i}
+    let buffer = 0;
+    let bitsLeft = 0;
+    let output = '';
+    for (let i = 0; i < input.length; i++) {
+        buffer = (buffer << 5) | lookup[input[i]];
+        bitsLeft += 5;
+        if (bitsLeft >= 8) {output += String.fromCharCode((buffer >> (bitsLeft - 8)) & 255); bitsLeft -= 8}
+    }
+    return output;
   }
-  
-  return new Response('OK', { status: 200 });
+
+  static async Hash(text) {
+    const salt = await this.getSalt();
+    const key = await this.getKey(salt);
+    const encoded = String(text).split('').map((char, index) => {
+        return String.fromCharCode(char.charCodeAt(0) ^ key[index % key.length]);
+    }).join('');
+    return await this.baseEncode(salt + encoded);
+  }
+
+  static async deHash(hashed) {
+    const decoded = await this.baseDecode(hashed);
+    const salt = decoded.substring(0, 16);
+    const encoded = decoded.substring(16);
+    const key = await this.getKey(salt);
+    const text = encoded.split('').map((char, index) => {
+        return String.fromCharCode(char.charCodeAt(0) ^ key[index % key.length]);
+    }).join('');
+    return text;
+  }
 }
 
-// ===== COMMAND HANDLERS =====
-async function handleStart(interaction) {
-  const embed = {
-    title: '💎 Welcome to the Premium CC Gen Bot! ⚡️',
-    description: 'I can generate valid CCs with accurate Luhn algorithms and fetch real-time BIN data.\n\nSelect an option below to get started:',
-    color: 0x00ccff
-  };
-  
-  return {
-    embeds: [embed],
-    components: [
-      {
-        type: 1,
-        components: [
-          { type: 2, style: 1, label: '💳 Generate CC', custom_id: 'menu_gen' },
-          { type: 2, style: 4, label: '🔥 Mass Gen (TXT)', custom_id: 'menu_mgen' },
-          { type: 2, style: 2, label: '🔍 BIN Lookup', custom_id: 'menu_bin' },
-          { type: 2, style: 2, label: '🛠 Commands & Help', custom_id: 'menu_help' }
-        ]
+// ---------- Telegram Bot ---------- //
+
+class Bot {
+  static async handleWebhook(event) {
+    if (event.request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== BOT_SECRET) {
+      return new Response('Unauthorized', { status: 403 })
+    }
+    const update = await event.request.json()
+    event.waitUntil(this.Update(event, update))
+    return new Response('Ok')
+  }
+
+  static async registerWebhook(event, requestUrl, suffix, secret) {
+    const webhookUrl = `${requestUrl.protocol}//${requestUrl.hostname}${suffix}`
+    const response = await fetch(await this.apiUrl('setWebhook', { url: webhookUrl, secret_token: secret }))
+    return new Response(JSON.stringify(await response.json()), {headers: HEADERS_ERRR})
+  }
+
+  static async unregisterWebhook(event) { 
+    const response = await fetch(await this.apiUrl('setWebhook', { url: '' }))
+    return new Response(JSON.stringify(await response.json()), {headers: HEADERS_ERRR})
+  }
+
+  static async getMe() {
+    const response = await fetch(await this.apiUrl('getMe'))
+    if (response.status == 200) {return (await response.json()).result;
+    } else {return await response.json()}
+  }
+
+  static async sendMessage(chat_id, reply_id, text, reply_markup=[]) {
+    const response = await fetch(await this.apiUrl('sendMessage', {chat_id: chat_id, reply_to_message_id: reply_id, parse_mode: 'markdown', text, reply_markup: JSON.stringify({inline_keyboard: reply_markup})}))
+    if (response.status == 200) {return (await response.json()).result;
+    } else {return await response.json()}
+  }
+
+  static async sendDocument(chat_id, file_id) {
+    const response = await fetch(await this.apiUrl('sendDocument', {chat_id: chat_id, document: file_id}))
+    if (response.status == 200) {return (await response.json()).result;
+    } else {return await response.json()}
+  }
+
+  static async sendPhoto(chat_id, file_id) {
+    const response = await fetch(await this.apiUrl('sendPhoto', {chat_id: chat_id, photo: file_id}))
+    if (response.status == 200) {return (await response.json()).result;
+    } else {return await response.json()}
+  }
+
+  static async editMessage(channel_id, message_id, caption_text) {
+      const response = await fetch(await this.apiUrl('editMessageCaption', {chat_id: channel_id, message_id: message_id, caption: caption_text}))
+      if (response.status == 200) {return (await response.json()).result;
+      } else {return await response.json()}
+  }
+
+  static async answerInlineArticle(query_id, title, description, text, reply_markup=[], id='1') {
+    const data = [{type: 'article', id: id, title: title, thumbnail_url: "https://i.ibb.co/5s8hhND/dac5fa134448.png", description: description, input_message_content: {message_text: text, parse_mode: 'markdown'}, reply_markup: {inline_keyboard: reply_markup}}];
+    const response = await fetch(await this.apiUrl('answerInlineQuery', {inline_query_id: query_id, results: JSON.stringify(data), cache_time: 1}))
+    if (response.status == 200) {return (await response.json()).result;
+    } else {return await response.json()}
+  }
+
+  static async answerInlineDocument(query_id, title, file_id, mime_type, reply_markup=[], id='1') {
+    const data = [{type: 'document', id: id, title: title, document_file_id: file_id, mime_type: mime_type, description: mime_type, reply_markup: {inline_keyboard: reply_markup}}];
+    const response = await fetch(await this.apiUrl('answerInlineQuery', {inline_query_id: query_id, results: JSON.stringify(data), cache_time: 1}))
+    if (response.status == 200) {return (await response.json()).result;
+    } else {return await response.json()}
+  }
+
+  static async answerInlinePhoto(query_id, title, photo_id, reply_markup=[], id='1') {
+    const data = [{type: 'photo', id: id, title: title, photo_file_id: photo_id, reply_markup: {inline_keyboard: reply_markup}}];
+    const response = await fetch(await this.apiUrl('answerInlineQuery', {inline_query_id: query_id, results: JSON.stringify(data), cache_time: 1}))
+    if (response.status == 200) {return (await response.json()).result;
+    } else {return await response.json()}
+  }
+
+  static async getFile(file_id) {
+      const response = await fetch(await this.apiUrl('getFile', {file_id: file_id}))
+      if (response.status == 200) {return (await response.json()).result;
+      } else {return await response.json()}
+  }
+
+  static async fetchFile(file_path, request) {
+      const headers = {};
+      if (request && request.headers.has('range')) {
+          headers['range'] = request.headers.get('range');
       }
-    ]
-  };
+      const response = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${file_path}`, { headers });
+      return response; 
+  }
+
+  static async apiUrl (methodName, params = null) {
+      let query = ''
+      if (params) {query = '?' + new URLSearchParams(params).toString()}
+      return `https://api.telegram.org/bot${BOT_TOKEN}/${methodName}${query}`
+  }
+
+  static async Update(event, update) {
+    if (update.inline_query) {await onInline(event, update.inline_query)}
+    if ('message' in update) {await onMessage(event, update.message)}
+  }
 }
 
-async function handleGen(input, env) {
-  const args = input.replace(/[|,]/g, ' ').split(/\s+/);
-  let bin_pattern = args[0]?.replace(/[^0-9x]/g, '') || '';
-  
-  if (bin_pattern.length < 6) {
-    return { content: '❌ BIN must be at least 6 digits.', flags: 64 };
+// ---------- Inline Listener ---------- // 
+
+async function onInline(event, inline) {
+  let  fID; let fName; let fType; let fSize; let fLen;
+
+  if (!PUBLIC_BOT && inline.from.id != BOT_OWNER) {
+    const buttons = [[{ text: "Source Code", url: "https://github.com/vauth/filestream-cf" }]];
+    return await Bot.answerInlineArticle(inline.id, "Access forbidden", "Deploy your own bot.", "*❌ Access forbidden.*\n📡 Deploy your own bot.", buttons)
   }
-  
-  let mm = args[1] || 'rnd';
-  let yy = args[2] || 'rnd';
-  let cvv = args[3] || 'rnd';
-  
-  if (yy !== 'rnd' && yy.length === 2) yy = '20' + yy;
-  if (mm !== 'rnd' && mm.length === 1) mm = '0' + mm;
-  
-  const cards = generateCards(bin_pattern, mm, yy, cvv, 10);
-  const binInfo = await getBinInfo(bin_pattern, env);
-  const embed = buildEmbed(bin_pattern, binInfo, cards, mm, yy, cvv, 10);
-  
-  return {
-    embeds: [embed],
-    components: [
-      {
-        type: 1,
-        components: [
-          { type: 2, style: 1, label: '💳 Generate Again', custom_id: `gen_again|${bin_pattern}|${mm}|${yy}|${cvv}` },
-          { type: 2, style: 3, label: '🔥 Mass Gen (5)', custom_id: `mass_gen|${bin_pattern}|${mm}|${yy}|${cvv}` }
-        ]
-      }
-    ]
-  };
+ 
+  try {await Cryptic.deHash(inline.query)} catch {
+    const buttons = [[{ text: "Source Code", url: "https://github.com/vauth/filestream-cf" }]];
+    return await Bot.answerInlineArticle(inline.id, "Error", ERROR_407.description, ERROR_407.description, buttons)
+  }
+
+  const channel_id = BOT_CHANNEL;
+  const message_id = await Cryptic.deHash(inline.query);
+  const data = await Bot.editMessage(channel_id, message_id, await UUID());
+
+  if (data.error_code){
+    const buttons = [[{ text: "Source Code", url: "https://github.com/vauth/filestream-cf" }]];
+    return await Bot.answerInlineArticle(inline.id, "Error", data.description, data.description, buttons)
+  }
+
+  if (data.document){
+    fLen = data.document.length - 1
+    fID = data.document.file_id;
+    fName = data.document.file_name;
+    fType = data.document.mime_type;
+    fSize = data.document.file_size;
+  } else if (data.audio) {
+    fLen = data.audio.length - 1
+    fID = data.audio.file_id;
+    fName = data.audio.file_name;
+    fType = data.audio.mime_type;
+    fSize = data.audio.file_size;
+  } else if (data.video) {
+    fLen = data.video.length - 1
+    fID = data.video.file_id;
+    fName = data.video.file_name;
+    fType = data.video.mime_type;
+    fSize = data.video.file_size;
+  } else if (data.photo) {
+    fLen = data.photo.length - 1
+    fID = data.photo[fLen].file_id;
+    fName = data.photo[fLen].file_unique_id + '.jpg';
+    fType = "image/jpg";
+    fSize = data.photo[fLen].file_size;
+  } else {
+    return ERROR_406
+  }
+
+  if (fType == "image/jpg") {
+    const buttons = [[{ text: "Send Again", switch_inline_query_current_chat: inline.query }]]
+    return await Bot.answerInlinePhoto(inline.id, fName || "undefined", fID, buttons)
+  } else {
+    const buttons = [[{ text: "Send Again", switch_inline_query_current_chat: inline.query }]];
+    return await Bot.answerInlineDocument(inline.id, fName || "undefined", fID, fType, buttons)
+  }
+
 }
 
-async function handleMGen(bin, amount, env) {
-  const bin_pattern = bin.replace(/[^0-9x]/g, '');
-  if (bin_pattern.length < 6) {
-    return { content: '❌ BIN must be at least 6 digits.', flags: 64 };
-  }
-  
-  let raw = amount.toLowerCase().replace(/,/g, '');
-  let multiplier = 1;
-  if (raw.includes('k')) { multiplier = 1000; raw = raw.replace('k', ''); }
-  else if (raw.includes('m')) { multiplier = 1000000; raw = raw.replace('m', ''); }
-  
-  let count = parseInt(raw) * multiplier;
-  if (isNaN(count) || count < 1) {
-    return { content: '❌ Invalid amount format. Use like `500k` or `1m`.', flags: 64 };
-  }
-  if (count > 10000000) count = 10000000;
-  
-  const cards = generateCards(bin_pattern, 'rnd', 'rnd', 'rnd', count);
-  const binInfo = await getBinInfo(bin_pattern, env);
-  
-  const fileContent = `# Generated by CC Gen Bot\n# BIN: ${bin_pattern.slice(0,6)}\n# Count: ${count}\n# Date: ${new Date().toISOString()}\n\n${cards}`;
-  const b64File = btoa(fileContent);
-  
-  const embed = {
-    title: '🔥 MASS GEN COMPLETE',
-    color: 0xff0000,
-    fields: [
-      { name: '💳 Bin', value: `\`${bin_pattern.slice(0,6)}\``, inline: true },
-      { name: '💳 Info', value: `\`${binInfo.scheme} - ${binInfo.brand} - ${binInfo.type}\``, inline: true },
-      { name: '🏦 Bank', value: `\`${binInfo.bank}\` ${binInfo.emoji}`, inline: true },
-      { name: '💎 Amount', value: `\`${count.toLocaleString()}\` Cards`, inline: false }
-    ],
-    footer: { text: '⏱ Generated | 👨‍💻 Dev: Sx Coder' }
-  };
-  
-  return {
-    embeds: [embed],
-    files: [
-      {
-        filename: `${bin_pattern.slice(0,6)}_${amount}_gen.txt`,
-        content_base64: b64File
-      }
-    ]
-  };
-}
+// ---------- Message Listener ---------- // 
 
-async function handleBin(bin, env) {
-  const bin_clean = bin.replace(/[^0-9]/g, '');
-  if (bin_clean.length < 6) {
-    return { content: '❌ BIN must be at least 6 digits.', flags: 64 };
-  }
-  
-  const bin_lookup = bin_clean.slice(0, 8);
-  const info = await getBinInfo(bin_lookup, env);
-  
-  const is_valid = bin_clean.length >= 16 && luhnCheck(bin_clean) ? '✅ Valid' : 
-                   bin_clean.length >= 16 ? '❌ Invalid' : '⚠️ Too short';
-  
-  const embed = {
-    title: `🔍 BIN LOOKUP – ${bin_lookup}`,
-    color: 0x9b59b6,
-    fields: [
-      { name: '🏦 Bank', value: `\`${info.bank}\``, inline: true },
-      { name: '🌍 Country', value: `\`${info.country}\` ${info.emoji}`, inline: true },
-      { name: '💳 Scheme', value: `\`${info.scheme}\``, inline: true },
-      { name: '💳 Type', value: `\`${info.type}\``, inline: true },
-      { name: '💎 Brand', value: `\`${info.brand}\``, inline: true },
-      { name: '✅ Luhn Check', value: `\`${is_valid}\``, inline: false }
-    ],
-    footer: { text: '👨‍💻 Dev: Sx Coder' }
-  };
-  
-  return { embeds: [embed] };
-}
+async function onMessage(event, message) {
+  let fID; let fName; let fSave; let fType;
+  let url = new URL(event.request.url);
+  let bot = await Bot.getMe();
 
-// ===== COMPONENT HANDLER =====
-async function handleComponent(interaction, env) {
-  const customId = interaction.data.custom_id;
-  const token = interaction.token;
-  const appId = interaction.application_id;
-  
-  // Parse custom_id
-  if (customId.startsWith('menu_')) {
-    const menuType = customId.replace('menu_', '');
-    let embed, components;
-    
-    switch (menuType) {
-      case 'gen':
-        embed = {
-          title: '💳 Generate CC Instructions',
-          description: 'Send a message like:\n`/gen 404000`\n\nOr be specific:\n`/gen 404000|05|2028|123`',
-          color: 0x00ff00
-        };
-        components = [{ type: 1, components: [{ type: 2, style: 2, label: '🔙 Back to Menu', custom_id: 'back_menu' }] }];
-        break;
-      case 'mgen':
-        embed = {
-          title: '🔥 Mass Gen Instructions',
-          description: 'Output huge amounts of CCs to a .txt file.\nSend:\n`/mgen 404000 500k`',
-          color: 0xff0000
-        };
-        components = [{ type: 1, components: [{ type: 2, style: 2, label: '🔙 Back to Menu', custom_id: 'back_menu' }] }];
-        break;
-      case 'bin':
-        embed = {
-          title: '🔍 BIN Lookup Instructions',
-          description: 'Get full info about any BIN.\nSend:\n`/bin 519535`\n\nYou can also check full card validity with Luhn.',
-          color: 0x9b59b6
-        };
-        components = [{ type: 1, components: [{ type: 2, style: 2, label: '🔙 Back to Menu', custom_id: 'back_menu' }] }];
-        break;
-      case 'help':
-        embed = {
-          title: '🛠 Bot Commands & Usage',
-          description: '**1. Standard Gen:**\n`/gen 519535`\n`/gen 519535|12|2027|rnd`\n\n**2. Mass Gen (TXT File):**\n`/mgen 519535 500k`\n\n**3. BIN Lookup:**\n`/bin 519535`\n\n*Use \'k\' for thousands (e.g., 50k, 500k).*',
-          color: 0xffff00
-        };
-        components = [{ type: 1, components: [{ type: 2, style: 2, label: '🔙 Back to Menu', custom_id: 'back_menu' }] }];
-        break;
+  if (message.via_bot && message.via_bot.username == bot.username) {
+    return
+  }
+
+  if (message.chat.id.toString().includes("-100")) {
+    return
+  }
+
+  if (message.text && message.text.startsWith("/start ")) {
+    const file = message.text.split("/start ")[1]
+    try {await Cryptic.deHash(file)} catch {return await Bot.sendMessage(message.chat.id, message.message_id, ERROR_407.description)}
+
+    const channel_id = BOT_CHANNEL;
+    const message_id = await Cryptic.deHash(file);
+    const data = await Bot.editMessage(channel_id, message_id, await UUID());
+
+    if (data.document) {
+      fID = data.document.file_id;
+      return await Bot.sendDocument(message.chat.id, fID)
+    } else if (data.audio) {
+      fID = data.audio.file_id;
+      return await Bot.sendDocument(message.chat.id, fID)
+    } else if (data.video) {
+      fID = data.video.file_id;
+      return await Bot.sendDocument(message.chat.id, fID)
+    } else if (data.photo) {
+      fID = data.photo[data.photo.length - 1].file_id;
+      return await Bot.sendPhoto(message.chat.id, fID)
+    } else {
+      return Bot.sendMessage(message.chat.id, message.message_id, "Bad Request: File not found")
     }
-    
-    await fetch(`https://discord.com/api/v10/webhooks/${appId}/${token}/messages/@original`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed], components })
-    });
-    
-    return new Response('OK', { status: 200 });
   }
-  
-  if (customId === 'back_menu') {
-    const embed = {
-      title: '💎 Welcome to the Premium CC Gen Bot! ⚡️',
-      description: 'I can generate valid CCs with accurate Luhn algorithms and fetch real-time BIN data.\n\nSelect an option below to get started:',
-      color: 0x00ccff
-    };
-    const components = [{
-      type: 1,
-      components: [
-        { type: 2, style: 1, label: '💳 Generate CC', custom_id: 'menu_gen' },
-        { type: 2, style: 4, label: '🔥 Mass Gen (TXT)', custom_id: 'menu_mgen' },
-        { type: 2, style: 2, label: '🔍 BIN Lookup', custom_id: 'menu_bin' },
-        { type: 2, style: 2, label: '🛠 Commands & Help', custom_id: 'menu_help' }
-      ]
-    }];
-    
-    await fetch(`https://discord.com/api/v10/webhooks/${appId}/${token}/messages/@original`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed], components })
-    });
-    
-    return new Response('OK', { status: 200 });
-  }
-  
-  // Generate again buttons
-  if (customId.startsWith('gen_again|') || customId.startsWith('mass_gen|')) {
-    const parts = customId.split('|');
-    const bin_pattern = parts[1];
-    const mm = parts[2];
-    const yy = parts[3];
-    const cvv = parts[4];
-    const count = customId.startsWith('mass_gen|') ? 5 : 10;
-    
-    const cards = generateCards(bin_pattern, mm, yy, cvv, count);
-    const binInfo = await getBinInfo(bin_pattern, env);
-    const embed = buildEmbed(bin_pattern, binInfo, cards, mm, yy, cvv, count);
-    
-    const components = [{
-      type: 1,
-      components: [
-        { type: 2, style: 1, label: '💳 Generate Again', custom_id: `gen_again|${bin_pattern}|${mm}|${yy}|${cvv}` },
-        { type: 2, style: 3, label: '🔥 Mass Gen (5)', custom_id: `mass_gen|${bin_pattern}|${mm}|${yy}|${cvv}` }
-      ]
-    }];
-    
-    await fetch(`https://discord.com/api/v10/webhooks/${appId}/${token}/messages/@original`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed], components })
-    });
-    
-    return new Response('OK', { status: 200 });
-  }
-  
-  return new Response('Unknown component', { status: 400 });
-}
 
-// ===== CORE FUNCTIONS =====
-function luhnCheck(cardNumber) {
-  const cleaned = cardNumber.replace(/[^0-9]/g, '');
-  if (cleaned.length < 16) return false;
-  
-  let total = 0;
-  let alt = true;
-  for (let i = cleaned.length - 1; i >= 0; i--) {
-    let n = parseInt(cleaned[i]);
-    if (alt) {
-      n *= 2;
-      if (n > 9) n = (n % 10) + 1;
-    }
-    total += n;
-    alt = !alt;
+  if (!PUBLIC_BOT && message.chat.id != BOT_OWNER) {
+    const buttons = [[{ text: "Source Code", url: "https://github.com/vauth/filestream-cf" }]];
+    return Bot.sendMessage(message.chat.id, message.message_id, "*❌ Access forbidden.*\n📡 Deploy your own bot.", buttons)
   }
-  return total % 10 === 0;
-}
 
-function generateCards(binPattern, mm, yy, cvv, count) {
-  const targetLen = binPattern.startsWith('37') ? 15 : 16;
-  const cleanBase = binPattern.replace(/[^0-9x]/g, '').slice(0, targetLen - 1);
-  const nowYY = parseInt(new Date().getFullYear().toString().slice(2));
-  
-  const results = [];
-  for (let i = 0; i < count; i++) {
-    let ccStr = '';
-    for (let c of cleanBase) {
-      if (c.toLowerCase() === 'x') ccStr += Math.floor(Math.random() * 10);
-      else ccStr += c;
-    }
-    while (ccStr.length < targetLen - 1) {
-      ccStr += Math.floor(Math.random() * 10);
-    }
-    
-    // Luhn
-    let total = 0;
-    let alt = true;
-    for (let i = ccStr.length - 1; i >= 0; i--) {
-      let n = parseInt(ccStr[i]);
-      if (alt) {
-        n *= 2;
-        if (n > 9) n = (n % 10) + 1;
-      }
-      total += n;
-      alt = !alt;
-    }
-    const checkDigit = (10 - (total % 10)) % 10;
-    const ccFull = ccStr + checkDigit;
-    
-    const genMM = (mm && mm !== 'rnd') ? mm.padStart(2, '0') : String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
-    const genYY = (yy && yy !== 'rnd') ? yy : String(nowYY + Math.floor(Math.random() * 10) + 1);
-    const genCVV = (cvv && cvv !== 'rnd') ? cvv : 
-                   (binPattern.startsWith('37') ? String(Math.floor(Math.random() * 9000) + 1000) : String(Math.floor(Math.random() * 900) + 100));
-    
-    results.push(`${ccFull}|${genMM}|${genYY}|${genCVV}`);
+  if (message.document){
+    fID = message.document.file_id;
+    fName = message.document.file_name;
+    fType = message.document.mime_type.split("/")[0]
+    fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
+  } else if (message.audio) {
+    fID = message.audio.file_id;
+    fName = message.audio.file_name;
+    fType = message.audio.mime_type.split("/")[0]
+    fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
+  } else if (message.video) {
+    fID = message.video.file_id;
+    fName = message.video.file_name;
+    fType = message.video.mime_type.split("/")[0]
+    fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
+  } else if (message.photo) {
+    fID = message.photo[message.photo.length - 1].file_id;
+    fName = message.photo[message.photo.length - 1].file_unique_id + '.jpg';
+    fType = "image/jpg".split("/")[0];
+    fSave = await Bot.sendPhoto(BOT_CHANNEL, fID)
+  } else {
+    return Bot.sendMessage(message.chat.id, message.message_id, "Send me any file/video/gif/audio *(t<=4GB, e<=20MB)*.")
   }
-  return results.join('\n');
-}
 
-async function getBinInfo(binPrefix, env) {
-  try {
-    const lookupBin = binPrefix.slice(0, 6);
-    const response = await fetch(`https://lookup.binlist.net/${lookupBin}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json'
-      }
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        scheme: data.scheme?.toUpperCase() || 'UNKNOWN',
-        brand: data.brand || 'UNKNOWN',
-        type: data.type?.toUpperCase() || 'UNKNOWN',
-        bank: data.bank?.name || 'UNKNOWN BANK',
-        emoji: data.country?.emoji || '🏳️',
-        country: data.country?.name || 'Unknown'
-      };
-    }
-  } catch (e) {
-    console.error('BIN lookup error:', e);
-  }
-  
-  // Fallback for common BINs
-  const fallback = {
-    '519535': { scheme: 'MASTERCARD', brand: 'WORLD', type: 'CREDIT', bank: 'Wells Fargo', emoji: '🇺🇸', country: 'United States' },
-    '404000': { scheme: 'VISA', brand: 'PLATINUM', type: 'CREDIT', bank: 'Chase', emoji: '🇺🇸', country: 'United States' },
-    '411111': { scheme: 'VISA', brand: 'CLASSIC', type: 'CREDIT', bank: 'Test Bank', emoji: '🏳️', country: 'Unknown' },
-    '555555': { scheme: 'MASTERCARD', brand: 'STANDARD', type: 'CREDIT', bank: 'Test Bank', emoji: '🏳️', country: 'Unknown' },
-    '378282': { scheme: 'AMEX', brand: 'GOLD', type: 'CHARGE', bank: 'American Express', emoji: '🇺🇸', country: 'United States' },
-    '601100': { scheme: 'DISCOVER', brand: 'CLASSIC', type: 'CREDIT', bank: 'Discover Bank', emoji: '🇺🇸', country: 'United States' }
-  };
-  
-  for (const [key, info] of Object.entries(fallback)) {
-    if (binPrefix.startsWith(key)) return info;
-  }
-  
-  return { scheme: 'UNKNOWN', brand: 'UNKNOWN', type: 'UNKNOWN', bank: 'UNKNOWN BANK', emoji: '🏳️', country: 'Unknown' };
-}
+  if (fSave.error_code) {return Bot.sendMessage(message.chat.id, message.message_id, fSave.description)}
 
-function buildEmbed(binPattern, binInfo, cards, mm, yy, cvv, count) {
-  const ccPad = binPattern.padEnd(16, 'x').slice(0, 16);
-  
-  return {
-    title: '💎 PREMIUM CC GENERATOR',
-    color: 0x00ccff,
-    fields: [
-      { name: '💳 Bin', value: `\`${binPattern.slice(0, 6)}\``, inline: true },
-      { name: '💳 Info', value: `\`${binInfo.scheme} - ${binInfo.brand} - ${binInfo.type}\``, inline: true },
-      { name: '🏦 Bank', value: `\`${binInfo.bank}\` ${binInfo.emoji}`, inline: true },
-      { name: '🌍 Country', value: `\`${binInfo.country}\``, inline: true },
-      { name: '🌍 Format', value: `\`${ccPad}|${mm}|${yy}|${cvv}\``, inline: false },
-      { name: '━━━━━━━━━━━━━━━━━━━━━━', value: `\`\`\`\n${cards}\n\`\`\``, inline: false }
-    ],
-    footer: { text: `⏱ Generated ${count} cards | 👨‍💻 Dev: Sx Coder` }
-  };
-  }
+  const final_hash = await Cryptic.Hash(fSave.message_id);
+  const final_link = `${url.origin}/?file=${final_hash}`;
+  const final_stre = `${url.origin}/?file=${final_hash}&mode=inline`;
+  const final_watch = `${url.origin}/?file=${final_hash}&mode=watch`; 
+  const final_tele = `https://t.me/${bot.username}/?start=${final_hash}`;
+
+  const buttons = [
+    [{ text: "▶️ Premium Watch Online", url: final_watch }],
+    [{ text: "Telegram Link", url: final_tele }, { text: "Inline Link", switch_inline_query: final_hash }],
+    [{ text: "Stream Link", url: final_stre }, { text: "Download Link", url: final_link }]
+  ];
+
+  let final_text = `*🗂 File Name:* \`${fName}\`\n*⚙️ File Hash:* \`${final_hash}\``
+  return Bot.sendMessage(message.chat.id, message.message_id, final_text, buttons)
+}
