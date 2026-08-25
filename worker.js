@@ -8,6 +8,11 @@ const BOT_CHANNEL = -1004424431993;
 const SIA_SECRET = "SIA_SECRET"; 
 const PUBLIC_BOT = false; 
 
+// 🚀 NAYA UPGRADE: LOCAL API SERVER (For Big Files) 🚀
+// Default: "https://api.telegram.org"
+// Agar 20MB se badi files stream karni hain, toh apna Local Bot API Server yahan daal
+const TG_API_BASE = "https://api.telegram.org"; 
+
 // ---------- Do Not Modify ---------- // 
 
 const WHITE_METHODS = ["GET", "POST", "HEAD"];
@@ -19,7 +24,7 @@ const ERROR_406 = {"ok":false,"error_code":406,"description":"Bad Request: file 
 const ERROR_407 = {"ok":false,"error_code":407,"description":"Bad Request: file hash invalid by atob"};
 const ERROR_408 = {"ok":false,"error_code":408,"description":"Bad Request: mode not in [attachment, inline, watch]"};
 
-// ---------- Event Listener (ES Module Format for Wrangler V4) ---------- // 
+// ---------- Event Listener (ES Module Format) ---------- // 
 
 export default {
     async fetch(request, env, ctx) {
@@ -42,7 +47,6 @@ async function handleRequest(request, ctx) {
     if (!WHITE_METHODS.includes(request.method)) {return Raise(ERROR_405, 405);}
     try {await Cryptic.deHash(file)} catch {return Raise(ERROR_407, 404)}
 
-    // 🚀 THE PREMIUM PLYR.IO INJECTION 🚀
     if (mode === "watch") {
         const streamUrl = `${url.origin}/?file=${file}&mode=inline`;
         const html = `
@@ -54,11 +58,7 @@ async function handleRequest(request, ctx) {
             <title>Premium Stream</title>
             <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
             <style>
-                :root {
-                    --plyr-color-main: #e50914; 
-                    --plyr-video-background: #000;
-                    --plyr-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                }
+                :root { --plyr-color-main: #e50914; --plyr-video-background: #000; --plyr-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
                 body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
                 .video-wrapper { width: 100vw; height: 100vh; }
                 video { width: 100%; height: 100%; }
@@ -303,17 +303,19 @@ class Bot {
       } else {return await response.json()}
   }
 
+  // 🚀 NAYA UPGRADE: BASE URL CHANGE KIYA HAI YAHAN 🚀
   static async fetchFile(file_path, request) {
       const headers = {};
       if (request && request.headers.has('range')) { headers['range'] = request.headers.get('range'); }
-      const response = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${file_path}`, { headers });
+      const response = await fetch(`${TG_API_BASE}/file/bot${BOT_TOKEN}/${file_path}`, { headers });
       return response; 
   }
 
+  // 🚀 NAYA UPGRADE: BASE URL CHANGE KIYA HAI YAHAN 🚀
   static async apiUrl (methodName, params = null) {
       let query = ''
       if (params) {query = '?' + new URLSearchParams(params).toString()}
-      return `https://api.telegram.org/bot${BOT_TOKEN}/${methodName}${query}`
+      return `${TG_API_BASE}/bot${BOT_TOKEN}/${methodName}${query}`
   }
 
   static async Update(request, update) {
