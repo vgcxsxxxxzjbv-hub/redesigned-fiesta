@@ -126,11 +126,11 @@ async function RetrieveFile(channel_id, message_id, request) {
     if (data.error_code){return data}
     
     if (data.document){
-        fID = data.document.file_id; fName = data.document.file_name; fType = data.document.mime_type; fSize = data.document.file_size;
+        fLen = data.document.length - 1; fID = data.document.file_id; fName = data.document.file_name; fType = data.document.mime_type; fSize = data.document.file_size;
     } else if (data.audio) {
-        fID = data.audio.file_id; fName = data.audio.file_name; fType = data.audio.mime_type; fSize = data.audio.file_size;
+        fLen = data.audio.length - 1; fID = data.audio.file_id; fName = data.audio.file_name; fType = data.audio.mime_type; fSize = data.audio.file_size;
     } else if (data.video) {
-        fID = data.video.file_id; fName = data.video.file_name; fType = data.video.mime_type; fSize = data.video.file_size;
+        fLen = data.video.length - 1; fID = data.video.file_id; fName = data.video.file_name; fType = data.video.mime_type; fSize = data.video.file_size;
     } else if (data.photo) {
         fLen = data.photo.length - 1; fID = data.photo[fLen].file_id; fName = data.photo[fLen].file_unique_id + '.jpg'; fType = "image/jpg"; fSize = data.photo[fLen].file_size;
     } else {
@@ -349,11 +349,11 @@ async function onInline(request, inline) {
   }
 
   if (data.document){
-    fID = data.document.file_id; fName = data.document.file_name; fType = data.document.mime_type; fSize = data.document.file_size;
+    fLen = data.document.length - 1; fID = data.document.file_id; fName = data.document.file_name; fType = data.document.mime_type; fSize = data.document.file_size;
   } else if (data.audio) {
-    fID = data.audio.file_id; fName = data.audio.file_name; fType = data.audio.mime_type; fSize = data.audio.file_size;
+    fLen = data.audio.length - 1; fID = data.audio.file_id; fName = data.audio.file_name; fType = data.audio.mime_type; fSize = data.audio.file_size;
   } else if (data.video) {
-    fID = data.video.file_id; fName = data.video.file_name; fType = data.video.mime_type; fSize = data.video.file_size;
+    fLen = data.video.length - 1; fID = data.video.file_id; fName = data.video.file_name; fType = data.video.mime_type; fSize = data.video.file_size;
   } else if (data.photo) {
     fLen = data.photo.length - 1; fID = data.photo[fLen].file_id; fName = data.photo[fLen].file_unique_id + '.jpg'; fType = "image/jpg"; fSize = data.photo[fLen].file_size;
   } else {
@@ -406,13 +406,13 @@ async function onMessage(request, message) {
   }
 
   if (message.document){
-    fID = message.document.file_id; fName = message.document.file_name || "unknown"; fType = (message.document.mime_type || "unknown/unknown").split("/")[0];
+    fID = message.document.file_id; fName = message.document.file_name; fType = message.document.mime_type.split("/")[0];
     fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
   } else if (message.audio) {
-    fID = message.audio.file_id; fName = message.audio.file_name || "unknown"; fType = (message.audio.mime_type || "unknown/unknown").split("/")[0];
+    fID = message.audio.file_id; fName = message.audio.file_name; fType = message.audio.mime_type.split("/")[0];
     fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
   } else if (message.video) {
-    fID = message.video.file_id; fName = message.video.file_name || "unknown"; fType = (message.video.mime_type || "unknown/unknown").split("/")[0];
+    fID = message.video.file_id; fName = message.video.file_name; fType = message.video.mime_type.split("/")[0];
     fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
   } else if (message.photo) {
     fID = message.photo[message.photo.length - 1].file_id; fName = message.photo[message.photo.length - 1].file_unique_id + '.jpg'; fType = "image/jpg".split("/")[0];
