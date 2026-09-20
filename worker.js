@@ -28,16 +28,16 @@ const ERROR_408 = {"ok":false,"error_code":408,"description":"Bad Request: mode 
 
 export default {
     async fetch(request, env, ctx) {
-        return await handleRequest(request, ctx);
+        return await handleRequest(request, env, ctx);
     }
 };
 
-async function handleRequest(request, ctx) {
+async function handleRequest(request, env, ctx) {
     const url = new URL(request.url);
     const file = url.searchParams.get('file');
     const mode = url.searchParams.get('mode') || "attachment";
      
-    if (url.pathname === BOT_WEBHOOK) {return Bot.handleWebhook(request, ctx)}
+    if (url.pathname === BOT_WEBHOOK) {return Bot.handleWebhook(request, env, ctx)}
     if (url.pathname === '/registerWebhook') {return Bot.registerWebhook(request, url, BOT_WEBHOOK, BOT_SECRET)}
     if (url.pathname === '/unregisterWebhook') {return Bot.unregisterWebhook()}
     if (url.pathname === '/getMe') {return new Response(JSON.stringify(await Bot.getMe()), {headers: HEADERS_ERRR, status: 202})}
@@ -226,12 +226,12 @@ class Cryptic {
 // ---------- Telegram Bot ---------- //
 
 class Bot {
-  static async handleWebhook(request, ctx) {
+  static async handleWebhook(request, env, ctx) {
     if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== BOT_SECRET) {
       return new Response('Unauthorized', { status: 403 })
     }
     const update = await request.json()
-    ctx.waitUntil(this.Update(request, update))
+    ctx.waitUntil(this.Update(request, env, update))
     return new Response('Ok')
   }
 
@@ -253,7 +253,9 @@ class Bot {
   }
 
   static async sendMessage(chat_id, reply_id, text, reply_markup=[]) {
-    const response = await fetch(await this.apiUrl('sendMessage', {chat_id: chat_id, reply_to_message_id: reply_id, parse_mode: 'markdown', text, reply_markup: JSON.stringify({inline_keyboard: reply_markup})}))
+    let params = {chat_id: chat_id, parse_mode: 'markdown', text, reply_markup: JSON.stringify({inline_keyboard: reply_markup})};
+    if (reply_id) { params.reply_to_message_id = reply_id; }
+    const response = await fetch(await this.apiUrl('sendMessage', params))
     if (response.status == 200) {return (await response.json()).result;
     } else {return await response.json()}
   }
@@ -318,9 +320,9 @@ class Bot {
       return `${TG_API_BASE}/bot${BOT_TOKEN}/${methodName}${query}`
   }
 
-  static async Update(request, update) {
+  static async Update(request, env, update) {
     if (update.inline_query) {await onInline(request, update.inline_query)}
-    if ('message' in update) {await onMessage(request, update.message)}
+    if ('message' in update) {await onMessage(request, env, update.message)}
   }
 }
 
@@ -371,7 +373,7 @@ async function onInline(request, inline) {
 
 // ---------- Message Listener ---------- // 
 
-async function onMessage(request, message) {
+async function onMessage(request, env, message) {
   let fID; let fName; let fSave; let fType;
   let url = new URL(request.url);
   let bot = await Bot.getMe();
@@ -379,9 +381,69 @@ async function onMessage(request, message) {
   if (message.via_bot && message.via_bot.username == bot.username) { return }
   if (message.chat.id.toString().includes("-100")) { return }
 
+  if (env.USERS_KV && message.from && message.from.id) {
+    const userId = message.from.id.toString();
+    try {
+      const exists = await env.USERS_KV.get(userId);
+      if (!exists) {
+        await env.USERS_KV.put(userId, "active");
+      }
+    } catch (e) {
+      console.error("KV Store Error:", e);
+    }
+  }
+
+  if (message.text && message.text.startsWith("/broadcast") && message.from.id == BOT_OWNER) {
+    if (!env.USERS_KV) return Bot.sendMessage(message.chat.id, message.message_id, "KV store not configured.");
+    const broadcastText = message.text.replace("/broadcast", "").trim();
+    if (!broadcastText) return Bot.sendMessage(message.chat.id, message.message_id, "Please provide a message to broadcast.");
+
+    let cursor = "";
+    let count = 0;
+    while (true) {
+        const list = await env.USERS_KV.list({ cursor });
+        for (const key of list.keys) {
+            await Bot.sendMessage(key.name, null, broadcastText);
+            count++;
+        }
+        if (list.list_complete) break;
+        cursor = list.cursor;
+    }
+    return Bot.sendMessage(message.chat.id, message.message_id, `Broadcast complete. Sent to ${count} users.`);
+  }
+
+  if (message.text && message.text === "/stats" && message.from.id == BOT_OWNER) {
+    if (!env.USERS_KV) return Bot.sendMessage(message.chat.id, message.message_id, "KV store not configured.");
+
+    let cursor = "";
+    let userCount = 0;
+    while (true) {
+        const list = await env.USERS_KV.list({ cursor });
+        userCount += list.keys.length;
+        if (list.list_complete) break;
+        cursor = list.cursor;
+    }
+
+    // We can track file count in USERS_KV under a special key "STATS_FILES_PROCESSED"
+    let filesCount = await env.USERS_KV.get("STATS_FILES_PROCESSED") || "0";
+
+    const statsText = `*📊 Bot Statistics*\n\n👥 Total Users: \`${userCount}\`\n📁 Files Processed: \`${filesCount}\``;
+    return Bot.sendMessage(message.chat.id, message.message_id, statsText);
+  }
+
   if (message.text && message.text === "/start") {
     const welcomeText = "*👋 Welcome to FileStream Bot!*\n\nSend me any file, video, audio, or photo, and I will generate a direct download and streaming link for you!";
     return Bot.sendMessage(message.chat.id, message.message_id, welcomeText);
+  }
+
+  if (message.text && message.text === "/help") {
+    const helpText = "*💡 Help Menu*\n\n1. Forward or send any file (up to 4GB max if using local server, or 20MB otherwise).\n2. I will process it and provide a direct download link.\n3. You can also stream videos online!\n\n_Only authorized users can use this bot if PUBLIC_BOT is set to false._";
+    return Bot.sendMessage(message.chat.id, message.message_id, helpText);
+  }
+
+  if (message.text && message.text === "/about") {
+    const aboutText = "*ℹ️ About FileStream Bot*\n\nThis bot stores files on a private Telegram channel and streams them directly using Cloudflare Workers. It acts as an intermediary, saving you bandwidth while offering fast download speeds.\n\nBuilt with ❤️";
+    return Bot.sendMessage(message.chat.id, message.message_id, aboutText);
   }
 
   if (message.text && message.text.startsWith("/start ")) {
@@ -410,16 +472,24 @@ async function onMessage(request, message) {
     return Bot.sendMessage(message.chat.id, message.message_id, "*❌ Access forbidden.*\n📡 Deploy your own bot.", buttons)
   }
 
+  // Default max size is 20MB without local server, 4GB with local server
+  const MAX_FILE_SIZE = (TG_API_BASE === "https://api.telegram.org") ? 20 * 1024 * 1024 : 4000 * 1024 * 1024;
+
   if (message.document){
+    if (message.document.file_size > MAX_FILE_SIZE) return Bot.sendMessage(message.chat.id, message.message_id, `❌ File is too large! Maximum allowed size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     fID = message.document.file_id; fName = message.document.file_name || "unknown"; fType = (message.document.mime_type || "unknown/unknown").split("/")[0];
     fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
   } else if (message.audio) {
+    if (message.audio.file_size > MAX_FILE_SIZE) return Bot.sendMessage(message.chat.id, message.message_id, `❌ File is too large! Maximum allowed size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     fID = message.audio.file_id; fName = message.audio.file_name || "unknown"; fType = (message.audio.mime_type || "unknown/unknown").split("/")[0];
     fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
   } else if (message.video) {
+    if (message.video.file_size > MAX_FILE_SIZE) return Bot.sendMessage(message.chat.id, message.message_id, `❌ File is too large! Maximum allowed size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     fID = message.video.file_id; fName = message.video.file_name || "unknown"; fType = (message.video.mime_type || "unknown/unknown").split("/")[0];
     fSave = await Bot.sendDocument(BOT_CHANNEL, fID)
   } else if (message.photo) {
+    const pSize = message.photo[message.photo.length - 1].file_size;
+    if (pSize > MAX_FILE_SIZE) return Bot.sendMessage(message.chat.id, message.message_id, `❌ Photo is too large! Maximum allowed size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     fID = message.photo[message.photo.length - 1].file_id; fName = message.photo[message.photo.length - 1].file_unique_id + '.jpg'; fType = "image/jpg".split("/")[0];
     fSave = await Bot.sendPhoto(BOT_CHANNEL, fID)
   } else {
@@ -427,6 +497,11 @@ async function onMessage(request, message) {
   }
 
   if (fSave.error_code) {return Bot.sendMessage(message.chat.id, message.message_id, fSave.description)}
+
+  if (env.USERS_KV) {
+    let currentCount = parseInt(await env.USERS_KV.get("STATS_FILES_PROCESSED") || "0");
+    await env.USERS_KV.put("STATS_FILES_PROCESSED", (currentCount + 1).toString());
+  }
 
   const final_hash = await Cryptic.Hash(fSave.message_id);
   const final_link = `${url.origin}/?file=${final_hash}`;

@@ -2,3 +2,7 @@ name = "telegram-bot"
 main = "worker.js"
 compatibility_date = "2025-05-29"
 compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "USERS_KV"
+id = "a90afcac0d334bc6bcc1abe18047d60d"
