@@ -403,6 +403,7 @@ async function onMessage(request, env, message) {
     while (true) {
         const list = await env.USERS_KV.list({ cursor });
         for (const key of list.keys) {
+            if (key.name === "STATS_FILES_PROCESSED") continue;
             await Bot.sendMessage(key.name, null, broadcastText);
             count++;
         }
@@ -419,7 +420,7 @@ async function onMessage(request, env, message) {
     let userCount = 0;
     while (true) {
         const list = await env.USERS_KV.list({ cursor });
-        userCount += list.keys.length;
+        userCount += list.keys.filter(k => k.name !== "STATS_FILES_PROCESSED").length;
         if (list.list_complete) break;
         cursor = list.cursor;
     }
