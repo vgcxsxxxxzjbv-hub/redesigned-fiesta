@@ -379,6 +379,11 @@ async function onMessage(request, message) {
   if (message.via_bot && message.via_bot.username == bot.username) { return }
   if (message.chat.id.toString().includes("-100")) { return }
 
+  if (message.text && message.text === "/start") {
+    const welcomeText = "*👋 Welcome to FileStream Bot!*\n\nSend me any file, video, audio, or photo, and I will generate a direct download and streaming link for you!";
+    return Bot.sendMessage(message.chat.id, message.message_id, welcomeText);
+  }
+
   if (message.text && message.text.startsWith("/start ")) {
     const file = message.text.split("/start ")[1]
     try {await Cryptic.deHash(file)} catch {return await Bot.sendMessage(message.chat.id, message.message_id, ERROR_407.description)}
